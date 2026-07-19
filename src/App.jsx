@@ -279,8 +279,10 @@ function Beranda({ goTo, transaksi, saldo, pemasukan, pengeluaran }) {
     }
 
     const hasil = [];
+    const akhir = new Date(mulai);
+    akhir.setDate(mulai.getDate() + 6); // selalu 7 slot penuh sejak titik mulai
     const cursor = new Date(mulai);
-    while (cursor <= hariIni) {
+    while (cursor <= akhir) {
       const totalHari = transaksiKeluar
         .filter((t) => {
           const td = new Date(parseTglID(t.tgl));
@@ -2100,4 +2102,3 @@ export default function BukuKasApp() {
     </div>
   );
 }
-
