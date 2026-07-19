@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
-import { Home, Receipt, PieChart as PieIcon, FileText, ArrowDownLeft, ArrowUpRight, Search, Download, ChevronRight, Plus, X, Trash2, HandCoins, Pencil, Wallet, Landmark, CreditCard, TrendingUp, Car, Building2, Gem, MoreHorizontal, UploadCloud, DownloadCloud, ArrowLeft, Users, Check, ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Home, Receipt, PieChart as PieIcon, FileText, ArrowDownLeft, ArrowUpRight, Search, Download, ChevronRight, Plus, X, Trash2, HandCoins, Pencil, Wallet, Landmark, CreditCard, TrendingUp, Car, Building2, Gem, MoreHorizontal, UploadCloud, DownloadCloud, ArrowLeft, Users, Check, ChevronDown, ArrowUp, ArrowDown, Info } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, ResponsiveContainer } from "recharts";
 
 // ---------- DATA CONTOH ----------
@@ -377,34 +377,34 @@ function Beranda({ goTo, transaksi, saldo, pemasukan, pengeluaran }) {
   );
 }
 
-function TxRow({ t, last, onDelete, onEdit }) {
+function TxRow({ t, last, onInfo }) {
   const positif = t.jumlah > 0;
+  const warnaBadge = positif ? "text-[#2F6F5E] bg-[#EAF2EE]" : "text-[#B5533C] bg-[#F3E7E1]";
   return (
-    <div className={`flex items-center justify-between px-4 py-3 ${!last ? "border-b border-[#F0EBDD]" : ""}`}>
-      <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${positif ? "bg-[#EAF2EE] text-[#2F6F5E]" : "bg-[#F3E7E1] text-[#B5533C]"}`}>
+    <div className={`flex items-start justify-between gap-3 px-4 py-3 ${!last ? "border-b border-[#F0EBDD]" : ""}`}>
+      <div className="flex items-start gap-3 min-w-0">
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${positif ? "bg-[#EAF2EE] text-[#2F6F5E]" : "bg-[#F3E7E1] text-[#B5533C]"}`}>
           {positif ? <ArrowDownLeft size={14} /> : <ArrowUpRight size={14} />}
         </div>
-        <div>
-          <div className="text-[14px] text-[#1B2A26] font-medium">{t.nama}</div>
-          <div className="text-[11px] text-[#8B8579]">{t.tgl} · {t.kat} · {t.metode}</div>
+        <div className="min-w-0">
+          <div className="text-[14px] text-[#1B2A26] font-medium truncate">{t.nama}</div>
+          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${warnaBadge}`}>{t.kat}</span>
+          <div className="text-[11px] text-[#8B8579] mt-1 leading-relaxed">
+            <div>{t.tgl}</div>
+            <div>{t.metode}</div>
+          </div>
         </div>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2 shrink-0">
         <div
-          className={`text-[13px] font-semibold mr-1 ${positif ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}
+          className={`text-[13px] font-semibold whitespace-nowrap ${positif ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}
           style={{ fontFamily: "'JetBrains Mono', monospace" }}
         >
           {rupiah(t.jumlah)}
         </div>
-        {onEdit && (
-          <button onClick={onEdit} className="text-[#8B8579] p-1.5">
-            <Pencil size={14} />
-          </button>
-        )}
-        {onDelete && (
-          <button onClick={onDelete} className="text-[#C9BFA8] p-1.5">
-            <Trash2 size={14} />
+        {onInfo && (
+          <button onClick={onInfo} className="text-[#8B8579] p-1">
+            <Info size={16} />
           </button>
         )}
       </div>
@@ -653,8 +653,7 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
               key={i}
               t={t}
               last={i === filtered.length - 1}
-              onEdit={() => { setEditItem(t); setFormOpen(true); }}
-              onDelete={() => onDelete(transaksi.indexOf(t))}
+              onInfo={() => { setEditItem(t); setFormOpen(true); }}
             />
           ))}
         </div>
@@ -665,6 +664,7 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
           initial={editItem}
           onClose={() => setFormOpen(false)}
           onSubmit={(data) => onEdit(transaksi.indexOf(editItem), data)}
+          onDelete={editItem ? () => { onDelete(transaksi.indexOf(editItem)); setFormOpen(false); } : null}
         />
       )}
     </div>
@@ -1954,7 +1954,7 @@ function Aset({ daftar, hutang, saldo, jumlahTransaksi, totalHutangSisa, hutangT
 }
 
 // ---------- FORM TAMBAH TRANSAKSI ----------
-function FormTambah({ initial, onClose, onSubmit }) {
+function FormTambah({ initial, onClose, onSubmit, onDelete }) {
   const [tipe, setTipe] = useState(initial ? (initial.jumlah < 0 ? "keluar" : "masuk") : "keluar");
   const [nama, setNama] = useState(initial?.nama || "");
   const [jumlah, setJumlah] = useState(initial ? String(Math.abs(initial.jumlah)) : "");
@@ -2080,6 +2080,11 @@ function FormTambah({ initial, onClose, onSubmit }) {
         <button onClick={submit} className="w-full bg-[#1B2A26] text-white py-3 rounded-xl text-[14px] font-medium mt-1">
           Simpan Transaksi
         </button>
+        {onDelete && (
+          <button onClick={onDelete} className="w-full text-[#B5533C] py-3 rounded-xl text-[14px] font-medium mt-1">
+            Hapus Transaksi
+          </button>
+        )}
       </div>
     </div>
   );
