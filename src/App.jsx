@@ -8,7 +8,7 @@ const KATEGORI_PENGELUARAN = ["Makan", "Belanja", "Transportasi", "Tagihan", "Ke
 const SUMBER_PEMASUKAN = ["Gaji", "Bonus", "Freelance", "Penjualan", "Investasi", "Hadiah", "Cashback", "Bunga Bank", "Lainnya"];
 const METODE_LIST = ["Cash", "Transfer", "E-wallet"];
 // Sumber tunggal daftar kategori gabungan — dipakai di filter Transaksi & Laporan agar selalu konsisten
-const KATEGORI_TRANSAKSI_SEMUA = [...new Set([...KATEGORI_PENGELUARAN, ...SUMBER_PEMASUKAN, "Hutang", "Piutang"])];
+const KATEGORI_TRANSAKSI_SEMUA = [...new Set([...KATEGORI_PENGELUARAN, ...SUMBER_PEMASUKAN])];
 // Status hutang/piutang, dipakai untuk filter & urutkan (di menu Hutang & di Laporan)
 const STATUS_HUTANG_OPSI = ["Aktif", "Terlambat", "Gagal Bayar", "Lunas"];
 const PRIORITAS_STATUS = { "Gagal Bayar": 0, Terlambat: 1, Aktif: 2, Lunas: 3 };
@@ -418,18 +418,31 @@ const URUTAN_OPSI = [
   ["terlama", "Terlama"],
   ["terbesar", "Nominal Terbesar"],
   ["terkecil", "Nominal Terkecil"],
+  ["rentang", "Rentang Waktu"],
 ];
 
 function Transaksi({ transaksi, onDelete, onEdit }) {
   const [q, setQ] = useState("");
   const [kategori, setKategori] = useState("semua");
   const [urutan, setUrutan] = useState("terbaru");
+  const [rentangWaktu, setRentangWaktu] = useState("bulan");
+  const [dariKustom, setDariKustom] = useState(todayInput());
+  const [sampaiKustom, setSampaiKustom] = useState(todayInput());
   const [editItem, setEditItem] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
 
   const filtered = useMemo(() => {
     let hasil = transaksi.filter((t) => t.nama.toLowerCase().includes(q.toLowerCase()));
     if (kategori !== "semua") hasil = hasil.filter((t) => t.kat === kategori);
+    if (urutan === "rentang") {
+      const { dari, sampai } = rentangTanggal(rentangWaktu, dariKustom, sampaiKustom);
+      hasil = hasil.filter((t) => {
+        const ts = parseTglID(t.tgl);
+        return ts >= dari && ts <= sampai;
+      });
+      hasil = [...hasil].sort((a, b) => parseTglID(b.tgl) - parseTglID(a.tgl));
+      return hasil;
+    }
     hasil = [...hasil].sort((a, b) => {
       if (urutan === "terbaru") return parseTglID(b.tgl) - parseTglID(a.tgl);
       if (urutan === "terlama") return parseTglID(a.tgl) - parseTglID(b.tgl);
@@ -437,7 +450,7 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
       return Math.abs(a.jumlah) - Math.abs(b.jumlah);
     });
     return hasil;
-  }, [transaksi, q, kategori, urutan]);
+  }, [transaksi, q, kategori, urutan, rentangWaktu, dariKustom, sampaiKustom]);
 
   return (
     <div className="px-6 pt-6 pb-4">
@@ -455,7 +468,7 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
         />
       </div>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-3">
         <select
           value={kategori}
           onChange={(e) => setKategori(e.target.value)}
@@ -472,6 +485,28 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
           {URUTAN_OPSI.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
       </div>
+
+      {urutan === "rentang" && (
+        <div className="mb-4">
+          <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
+            {RENTANG_OPSI.map(([v, l]) => (
+              <button
+                key={v}
+                onClick={() => setRentangWaktu(v)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-medium ${rentangWaktu === v ? "bg-[#1B2A26] text-white" : "bg-white border border-[#E7E1D3] text-[#8B8579]"}`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+          {rentangWaktu === "kustom" && (
+            <div className="flex gap-2">
+              <input type="date" value={dariKustom} onChange={(e) => setDariKustom(e.target.value)} className="flex-1 bg-white border border-[#E7E1D3] rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-[#2F6F5E]" />
+              <input type="date" value={sampaiKustom} onChange={(e) => setSampaiKustom(e.target.value)} className="flex-1 bg-white border border-[#E7E1D3] rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-[#2F6F5E]" />
+            </div>
+          )}
+        </div>
+      )}
 
       <p className="text-[11px] text-[#8B8579] mb-3">{filtered.length} dari {transaksi.length} transaksi</p>
 
