@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
-import { Home, Receipt, PieChart as PieIcon, FileText, ArrowDownLeft, ArrowUpRight, Search, Download, ChevronRight, Plus, X, Trash2, HandCoins, Pencil, Wallet, Landmark, CreditCard, TrendingUp, Car, Building2, Gem, MoreHorizontal, UploadCloud, DownloadCloud, ArrowLeft, Users, Check, ChevronDown } from "lucide-react";
+import { Home, Receipt, PieChart as PieIcon, FileText, ArrowDownLeft, ArrowUpRight, Search, Download, ChevronRight, Plus, X, Trash2, HandCoins, Pencil, Wallet, Landmark, CreditCard, TrendingUp, Car, Building2, Gem, MoreHorizontal, UploadCloud, DownloadCloud, ArrowLeft, Users, Check, ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, ResponsiveContainer } from "recharts";
 
 // ---------- DATA CONTOH ----------
@@ -413,14 +413,6 @@ function TxRow({ t, last, onDelete, onEdit }) {
 }
 
 // ---------- LAYAR: TRANSAKSI ----------
-const URUTAN_OPSI = [
-  ["terbaru", "Terbaru"],
-  ["terlama", "Terlama"],
-  ["terbesar", "Nominal Terbesar"],
-  ["terkecil", "Nominal Terkecil"],
-  ["rentang", "Rentang Waktu"],
-];
-
 function KotakCentang({ status, kecil }) {
   const ukuran = kecil ? "w-4 h-4" : "w-5 h-5";
   return (
@@ -484,14 +476,50 @@ function PanelKategori({ terpilih, onUbah, onClose }) {
 
         <button
           onClick={() => onUbah([])}
-          className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#E7E1D3] bg-white mb-3"
+          className="w-full flex items-center px-4 py-3 rounded-xl border border-[#E7E1D3] bg-white mb-3"
         >
           <span className="text-[14px] text-[#1B2A26] font-medium">Semua Kategori</span>
-          <KotakCentang status={terpilih.length === 0 ? "penuh" : "kosong"} />
         </button>
 
         <GrupKategori label="Pemasukan" daftar={SUMBER_PEMASUKAN} terpilih={terpilih} onUbah={onUbah} onToggleItem={toggle} />
         <GrupKategori label="Pengeluaran" daftar={KATEGORI_PENGELUARAN} terpilih={terpilih} onUbah={onUbah} onToggleItem={toggle} />
+      </div>
+    </div>
+  );
+}
+
+function PanelUrutan({ urutan, onUbah, onClose }) {
+  const klikTanggal = () => onUbah(urutan === "terbaru" ? "terlama" : "terbaru");
+  const klikNominal = () => onUbah(urutan === "terkecil" ? "terbesar" : "terkecil");
+  const aktifTanggal = urutan === "terbaru" || urutan === "terlama";
+  const aktifNominal = urutan === "terkecil" || urutan === "terbesar";
+  const aktifRentang = urutan === "rentang";
+
+  return (
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
+      <div className="w-full max-w-sm bg-[#F6F3EC] rounded-t-3xl p-6 pb-8" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-serif text-[18px] text-[#1B2A26]" style={{ fontFamily: "'Fraunces', serif" }}>Urutkan</h3>
+          <button onClick={onClose} className="text-[#8B8579]"><X size={18} /></button>
+        </div>
+
+        <div className="rounded-xl border border-[#E7E1D3] bg-white overflow-hidden">
+          <button onClick={klikTanggal} className="w-full flex items-center justify-between px-4 py-3.5 border-b border-[#F0EBDD] text-left">
+            <span className={`text-[14px] ${aktifTanggal ? "text-[#1B2A26] font-medium" : "text-[#8B8579]"}`}>
+              Tanggal {urutan === "terbaru" ? "(Terbaru)" : urutan === "terlama" ? "(Terlama)" : ""}
+            </span>
+            {urutan === "terlama" ? <ArrowUp size={16} className="text-[#1B2A26]" /> : <ArrowDown size={16} className={aktifTanggal ? "text-[#1B2A26]" : "text-[#C9BFA8]"} />}
+          </button>
+          <button onClick={klikNominal} className="w-full flex items-center justify-between px-4 py-3.5 border-b border-[#F0EBDD] text-left">
+            <span className={`text-[14px] ${aktifNominal ? "text-[#1B2A26] font-medium" : "text-[#8B8579]"}`}>
+              Nominal {urutan === "terkecil" ? "(Terkecil)" : urutan === "terbesar" ? "(Terbesar)" : ""}
+            </span>
+            {urutan === "terbesar" ? <ArrowDown size={16} className="text-[#1B2A26]" /> : <ArrowUp size={16} className={aktifNominal ? "text-[#1B2A26]" : "text-[#C9BFA8]"} />}
+          </button>
+          <button onClick={() => onUbah("rentang")} className="w-full flex items-center px-4 py-3.5 text-left">
+            <span className={`text-[14px] ${aktifRentang ? "text-[#1B2A26] font-medium" : "text-[#8B8579]"}`}>Rentang Waktu</span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -502,6 +530,7 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
   const [kategoriTerpilih, setKategoriTerpilih] = useState([]);
   const [panelKategoriBuka, setPanelKategoriBuka] = useState(false);
   const [urutan, setUrutan] = useState("terbaru");
+  const [panelUrutanBuka, setPanelUrutanBuka] = useState(false);
   const [rentangWaktu, setRentangWaktu] = useState("bulan");
   const [dariKustom, setDariKustom] = useState(todayInput());
   const [sampaiKustom, setSampaiKustom] = useState(todayInput());
@@ -514,6 +543,13 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
       : kategoriTerpilih.length === 1
       ? kategoriTerpilih[0]
       : `${kategoriTerpilih.length} Kategori`;
+
+  const labelUrutan =
+    urutan === "terbaru" ? "Tanggal (Terbaru)"
+    : urutan === "terlama" ? "Tanggal (Terlama)"
+    : urutan === "terkecil" ? "Nominal (Terkecil)"
+    : urutan === "terbesar" ? "Nominal (Terbesar)"
+    : "Rentang Waktu";
 
   const filtered = useMemo(() => {
     let hasil = transaksi.filter((t) => t.nama.toLowerCase().includes(q.toLowerCase()));
@@ -560,14 +596,18 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
           <span className="truncate">{labelKategori}</span>
           <ChevronDown size={14} className="text-[#8B8579] shrink-0" />
         </button>
-        <select
-          value={urutan}
-          onChange={(e) => setUrutan(e.target.value)}
-          className="flex-1 min-w-0 bg-white border border-[#E7E1D3] rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-[#2F6F5E]"
+        <button
+          onClick={() => setPanelUrutanBuka(true)}
+          className="flex-1 min-w-0 flex items-center justify-between gap-1 bg-white border border-[#E7E1D3] rounded-xl px-3 py-2.5 text-[13px] text-[#1B2A26]"
         >
-          {URUTAN_OPSI.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
+          <span className="truncate">{labelUrutan}</span>
+          <ChevronDown size={14} className="text-[#8B8579] shrink-0" />
+        </button>
       </div>
+
+      {panelUrutanBuka && (
+        <PanelUrutan urutan={urutan} onUbah={setUrutan} onClose={() => setPanelUrutanBuka(false)} />
+      )}
 
       {panelKategoriBuka && (
         <PanelKategori terpilih={kategoriTerpilih} onUbah={setKategoriTerpilih} onClose={() => setPanelKategoriBuka(false)} />
