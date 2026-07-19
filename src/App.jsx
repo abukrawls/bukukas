@@ -381,14 +381,16 @@ function TxRow({ t, last, onInfo }) {
   const positif = t.jumlah > 0;
   const warnaBadge = positif ? "text-[#2F6F5E] bg-[#EAF2EE]" : "text-[#B5533C] bg-[#F3E7E1]";
   return (
-    <div className={`flex items-start justify-between gap-3 px-4 py-3 ${!last ? "border-b border-[#F0EBDD]" : ""}`}>
-      <div className="flex items-start gap-3 min-w-0">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${positif ? "bg-[#EAF2EE] text-[#2F6F5E]" : "bg-[#F3E7E1] text-[#B5533C]"}`}>
+    <div className={`flex items-center justify-between gap-3 px-4 py-3 ${!last ? "border-b border-[#F0EBDD]" : ""}`}>
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${positif ? "bg-[#EAF2EE] text-[#2F6F5E]" : "bg-[#F3E7E1] text-[#B5533C]"}`}>
           {positif ? <ArrowDownLeft size={14} /> : <ArrowUpRight size={14} />}
         </div>
         <div className="min-w-0">
-          <div className="text-[14px] text-[#1B2A26] font-medium truncate">{t.nama}</div>
-          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${warnaBadge}`}>{t.kat}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[14px] text-[#1B2A26] font-medium truncate">{t.nama}</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${warnaBadge}`}>{t.kat}</span>
+          </div>
           <div className="text-[11px] text-[#8B8579] mt-1 leading-relaxed">
             <div>{t.tgl}</div>
             <div>{t.metode}</div>
@@ -397,7 +399,7 @@ function TxRow({ t, last, onInfo }) {
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <div
-          className={`text-[13px] font-semibold whitespace-nowrap ${positif ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}
+          className={`text-[16px] font-semibold whitespace-nowrap ${positif ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}
           style={{ fontFamily: "'JetBrains Mono', monospace" }}
         >
           {rupiah(t.jumlah)}
