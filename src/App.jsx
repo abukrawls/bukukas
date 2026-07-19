@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
-import { Home, Receipt, PieChart as PieIcon, FileText, ArrowDownLeft, ArrowUpRight, Search, Download, ChevronRight, Plus, X, Trash2, HandCoins, Pencil, Wallet, Landmark, CreditCard, TrendingUp, Car, Building2, Gem, MoreHorizontal, UploadCloud, DownloadCloud, ArrowLeft, Users } from "lucide-react";
+import { Home, Receipt, PieChart as PieIcon, FileText, ArrowDownLeft, ArrowUpRight, Search, Download, ChevronRight, Plus, X, Trash2, HandCoins, Pencil, Wallet, Landmark, CreditCard, TrendingUp, Car, Building2, Gem, MoreHorizontal, UploadCloud, DownloadCloud, ArrowLeft, Users, Check, ChevronDown } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, ResponsiveContainer } from "recharts";
 
 // ---------- DATA CONTOH ----------
@@ -421,9 +421,86 @@ const URUTAN_OPSI = [
   ["rentang", "Rentang Waktu"],
 ];
 
+function KotakCentang({ status, kecil }) {
+  const ukuran = kecil ? "w-4 h-4" : "w-5 h-5";
+  return (
+    <div className={`${ukuran} rounded-md border-2 flex items-center justify-center shrink-0 ${status !== "kosong" ? "border-[#1B2A26] bg-[#1B2A26]" : "border-[#C9BFA8]"}`}>
+      {status === "penuh" && <Check size={kecil ? 10 : 12} className="text-white" />}
+      {status === "sebagian" && <div className="w-2 h-0.5 bg-white rounded-full" />}
+    </div>
+  );
+}
+
+function GrupKategori({ label, daftar, terpilih, onUbah, onToggleItem }) {
+  const [buka, setBuka] = useState(false);
+  const jumlahTerpilih = daftar.filter((k) => terpilih.includes(k)).length;
+  const status = jumlahTerpilih === 0 ? "kosong" : jumlahTerpilih === daftar.length ? "penuh" : "sebagian";
+
+  const toggleGrup = () => {
+    if (status === "penuh") onUbah(terpilih.filter((x) => !daftar.includes(x)));
+    else onUbah([...new Set([...terpilih, ...daftar])]);
+  };
+
+  return (
+    <div className="rounded-xl border border-[#E7E1D3] bg-white overflow-hidden mb-3">
+      <div className="flex items-center border-b border-[#F0EBDD]">
+        <button onClick={toggleGrup} className="p-3 pl-4">
+          <KotakCentang status={status} />
+        </button>
+        <button onClick={() => setBuka((v) => !v)} className="flex-1 flex items-center justify-between py-3 pr-4 text-left">
+          <span className="text-[14px] text-[#1B2A26] font-medium">{label}</span>
+          <ChevronDown size={15} className={`text-[#8B8579] transition-transform ${buka ? "rotate-180" : ""}`} />
+        </button>
+      </div>
+      {buka && (
+        <div className="bg-[#FAF8F2]">
+          {daftar.map((k) => (
+            <button
+              key={k}
+              onClick={() => onToggleItem(k)}
+              className="w-full flex items-center justify-between pl-9 pr-4 py-2.5 border-b border-[#F0EBDD] last:border-0 text-left"
+            >
+              <span className="text-[13px] text-[#1B2A26]">{k}</span>
+              <KotakCentang status={terpilih.includes(k) ? "penuh" : "kosong"} kecil />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PanelKategori({ terpilih, onUbah, onClose }) {
+  const toggle = (k) => {
+    onUbah(terpilih.includes(k) ? terpilih.filter((x) => x !== k) : [...terpilih, k]);
+  };
+  return (
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
+      <div className="w-full max-w-sm bg-[#F6F3EC] rounded-t-3xl p-6 pb-8 max-h-[75vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-serif text-[18px] text-[#1B2A26]" style={{ fontFamily: "'Fraunces', serif" }}>Pilih Kategori</h3>
+          <button onClick={onClose} className="text-[#8B8579]"><X size={18} /></button>
+        </div>
+
+        <button
+          onClick={() => onUbah([])}
+          className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#E7E1D3] bg-white mb-3"
+        >
+          <span className="text-[14px] text-[#1B2A26] font-medium">Semua Kategori</span>
+          <KotakCentang status={terpilih.length === 0 ? "penuh" : "kosong"} />
+        </button>
+
+        <GrupKategori label="Pemasukan" daftar={SUMBER_PEMASUKAN} terpilih={terpilih} onUbah={onUbah} onToggleItem={toggle} />
+        <GrupKategori label="Pengeluaran" daftar={KATEGORI_PENGELUARAN} terpilih={terpilih} onUbah={onUbah} onToggleItem={toggle} />
+      </div>
+    </div>
+  );
+}
+
 function Transaksi({ transaksi, onDelete, onEdit }) {
   const [q, setQ] = useState("");
-  const [kategori, setKategori] = useState("semua");
+  const [kategoriTerpilih, setKategoriTerpilih] = useState([]);
+  const [panelKategoriBuka, setPanelKategoriBuka] = useState(false);
   const [urutan, setUrutan] = useState("terbaru");
   const [rentangWaktu, setRentangWaktu] = useState("bulan");
   const [dariKustom, setDariKustom] = useState(todayInput());
@@ -431,9 +508,16 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
   const [editItem, setEditItem] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
 
+  const labelKategori =
+    kategoriTerpilih.length === 0
+      ? "Semua Kategori"
+      : kategoriTerpilih.length === 1
+      ? kategoriTerpilih[0]
+      : `${kategoriTerpilih.length} Kategori`;
+
   const filtered = useMemo(() => {
     let hasil = transaksi.filter((t) => t.nama.toLowerCase().includes(q.toLowerCase()));
-    if (kategori !== "semua") hasil = hasil.filter((t) => t.kat === kategori);
+    if (kategoriTerpilih.length > 0) hasil = hasil.filter((t) => kategoriTerpilih.includes(t.kat));
     if (urutan === "rentang") {
       const { dari, sampai } = rentangTanggal(rentangWaktu, dariKustom, sampaiKustom);
       hasil = hasil.filter((t) => {
@@ -450,7 +534,7 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
       return Math.abs(a.jumlah) - Math.abs(b.jumlah);
     });
     return hasil;
-  }, [transaksi, q, kategori, urutan, rentangWaktu, dariKustom, sampaiKustom]);
+  }, [transaksi, q, kategoriTerpilih, urutan, rentangWaktu, dariKustom, sampaiKustom]);
 
   return (
     <div className="px-6 pt-6 pb-4">
@@ -469,14 +553,13 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
       </div>
 
       <div className="flex gap-2 mb-3">
-        <select
-          value={kategori}
-          onChange={(e) => setKategori(e.target.value)}
-          className="flex-1 min-w-0 bg-white border border-[#E7E1D3] rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-[#2F6F5E]"
+        <button
+          onClick={() => setPanelKategoriBuka(true)}
+          className="flex-1 min-w-0 flex items-center justify-between gap-1 bg-white border border-[#E7E1D3] rounded-xl px-3 py-2.5 text-[13px] text-[#1B2A26]"
         >
-          <option value="semua">Semua Kategori</option>
-          {KATEGORI_TRANSAKSI_SEMUA.map((k) => <option key={k} value={k}>{k}</option>)}
-        </select>
+          <span className="truncate">{labelKategori}</span>
+          <ChevronDown size={14} className="text-[#8B8579] shrink-0" />
+        </button>
         <select
           value={urutan}
           onChange={(e) => setUrutan(e.target.value)}
@@ -485,6 +568,10 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
           {URUTAN_OPSI.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
       </div>
+
+      {panelKategoriBuka && (
+        <PanelKategori terpilih={kategoriTerpilih} onUbah={setKategoriTerpilih} onClose={() => setPanelKategoriBuka(false)} />
+      )}
 
       {urutan === "rentang" && (
         <div className="mb-4">
