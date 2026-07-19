@@ -264,18 +264,31 @@ function StatusPill({ text, warna = "hijau" }) {
 // ---------- LAYAR: BERANDA ----------
 function Beranda({ goTo, transaksi, saldo, pemasukan, pengeluaran }) {
   const polaMingguan = useMemo(() => {
+    const hariIni = new Date();
+    hariIni.setHours(0, 0, 0, 0);
+
+    const batasMaksimal = new Date(hariIni);
+    batasMaksimal.setDate(hariIni.getDate() - 6); // paling jauh 7 hari ke belakang
+
+    const transaksiKeluar = transaksi.filter((t) => t.jumlah < 0);
+    let mulai = batasMaksimal;
+    if (transaksiKeluar.length > 0) {
+      const tglTerlama = new Date(Math.min(...transaksiKeluar.map((t) => parseTglID(t.tgl))));
+      tglTerlama.setHours(0, 0, 0, 0);
+      if (tglTerlama > batasMaksimal) mulai = tglTerlama; // kalau pengeluaran pertama lebih baru, mulai dari situ (jadi paling kiri)
+    }
+
     const hasil = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const totalHari = transaksi
-        .filter((t) => t.jumlah < 0)
+    const cursor = new Date(mulai);
+    while (cursor <= hariIni) {
+      const totalHari = transaksiKeluar
         .filter((t) => {
-          const td = parseTglID(t.tgl);
-          return new Date(td).getFullYear() === d.getFullYear() && new Date(td).getMonth() === d.getMonth() && new Date(td).getDate() === d.getDate();
+          const td = new Date(parseTglID(t.tgl));
+          return td.getFullYear() === cursor.getFullYear() && td.getMonth() === cursor.getMonth() && td.getDate() === cursor.getDate();
         })
         .reduce((a, t) => a + Math.abs(t.jumlah), 0);
-      hasil.push({ hari: HARI_ID[d.getDay()], jumlah: totalHari, iniHari: i === 0 });
+      hasil.push({ hari: HARI_ID[cursor.getDay()], jumlah: totalHari, iniHari: cursor.getTime() === hariIni.getTime() });
+      cursor.setDate(cursor.getDate() + 1);
     }
     return hasil;
   }, [transaksi]);
@@ -2087,3 +2100,4 @@ export default function BukuKasApp() {
     </div>
   );
 }
+
