@@ -423,14 +423,15 @@ function KotakCentang({ status, kecil }) {
   );
 }
 
-function GrupKategori({ label, daftar, terpilih, onUbah, onToggleItem }) {
+function GrupKategori({ label, prefix, daftar, terpilih, onUbah, onToggleItem }) {
   const [buka, setBuka] = useState(false);
-  const jumlahTerpilih = daftar.filter((k) => terpilih.includes(k)).length;
-  const status = jumlahTerpilih === 0 ? "kosong" : jumlahTerpilih === daftar.length ? "penuh" : "sebagian";
+  const kunci = daftar.map((k) => `${prefix}:${k}`);
+  const jumlahTerpilih = kunci.filter((k) => terpilih.includes(k)).length;
+  const status = jumlahTerpilih === 0 ? "kosong" : jumlahTerpilih === kunci.length ? "penuh" : "sebagian";
 
   const toggleGrup = () => {
-    if (status === "penuh") onUbah(terpilih.filter((x) => !daftar.includes(x)));
-    else onUbah([...new Set([...terpilih, ...daftar])]);
+    if (status === "penuh") onUbah(terpilih.filter((x) => !kunci.includes(x)));
+    else onUbah([...new Set([...terpilih, ...kunci])]);
   };
 
   return (
@@ -449,11 +450,11 @@ function GrupKategori({ label, daftar, terpilih, onUbah, onToggleItem }) {
           {daftar.map((k) => (
             <button
               key={k}
-              onClick={() => onToggleItem(k)}
+              onClick={() => onToggleItem(`${prefix}:${k}`)}
               className="w-full flex items-center justify-between pl-9 pr-4 py-2.5 border-b border-[#F0EBDD] last:border-0 text-left"
             >
               <span className="text-[13px] text-[#1B2A26]">{k}</span>
-              <KotakCentang status={terpilih.includes(k) ? "penuh" : "kosong"} kecil />
+              <KotakCentang status={terpilih.includes(`${prefix}:${k}`) ? "penuh" : "kosong"} kecil />
             </button>
           ))}
         </div>
@@ -463,8 +464,8 @@ function GrupKategori({ label, daftar, terpilih, onUbah, onToggleItem }) {
 }
 
 function PanelKategori({ terpilih, onUbah, onClose }) {
-  const toggle = (k) => {
-    onUbah(terpilih.includes(k) ? terpilih.filter((x) => x !== k) : [...terpilih, k]);
+  const toggle = (kunci) => {
+    onUbah(terpilih.includes(kunci) ? terpilih.filter((x) => x !== kunci) : [...terpilih, kunci]);
   };
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
@@ -481,8 +482,8 @@ function PanelKategori({ terpilih, onUbah, onClose }) {
           <span className="text-[14px] text-[#1B2A26] font-medium">Semua Kategori</span>
         </button>
 
-        <GrupKategori label="Pemasukan" daftar={SUMBER_PEMASUKAN} terpilih={terpilih} onUbah={onUbah} onToggleItem={toggle} />
-        <GrupKategori label="Pengeluaran" daftar={KATEGORI_PENGELUARAN} terpilih={terpilih} onUbah={onUbah} onToggleItem={toggle} />
+        <GrupKategori label="Pemasukan" prefix="masuk" daftar={SUMBER_PEMASUKAN} terpilih={terpilih} onUbah={onUbah} onToggleItem={toggle} />
+        <GrupKategori label="Pengeluaran" prefix="keluar" daftar={KATEGORI_PENGELUARAN} terpilih={terpilih} onUbah={onUbah} onToggleItem={toggle} />
       </div>
     </div>
   );
@@ -537,11 +538,12 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
   const [editItem, setEditItem] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
 
+  const TOTAL_SEMUA_KATEGORI = SUMBER_PEMASUKAN.length + KATEGORI_PENGELUARAN.length;
   const labelKategori =
-    kategoriTerpilih.length === 0
+    kategoriTerpilih.length === 0 || kategoriTerpilih.length === TOTAL_SEMUA_KATEGORI
       ? "Semua Kategori"
       : kategoriTerpilih.length === 1
-      ? kategoriTerpilih[0]
+      ? kategoriTerpilih[0].split(":")[1]
       : `${kategoriTerpilih.length} Kategori`;
 
   const labelUrutan =
@@ -553,7 +555,12 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
 
   const filtered = useMemo(() => {
     let hasil = transaksi.filter((t) => t.nama.toLowerCase().includes(q.toLowerCase()));
-    if (kategoriTerpilih.length > 0) hasil = hasil.filter((t) => kategoriTerpilih.includes(t.kat));
+    if (kategoriTerpilih.length > 0 && kategoriTerpilih.length < TOTAL_SEMUA_KATEGORI) {
+      hasil = hasil.filter((t) => {
+        const prefix = t.jumlah > 0 ? "masuk" : "keluar";
+        return kategoriTerpilih.includes(`${prefix}:${t.kat}`);
+      });
+    }
     if (urutan === "rentang") {
       const { dari, sampai } = rentangTanggal(rentangWaktu, dariKustom, sampaiKustom);
       hasil = hasil.filter((t) => {
