@@ -528,6 +528,58 @@ function PanelUrutan({ urutan, onUbah, onClose }) {
   );
 }
 
+function DetailTransaksi({ t, onClose, onEdit, onHapus }) {
+  const positif = t.jumlah > 0;
+  const warnaBadge = positif ? "text-[#2F6F5E] bg-[#EAF2EE]" : "text-[#B5533C] bg-[#F3E7E1]";
+  return (
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
+      <div className="w-full max-w-sm bg-[#F6F3EC] rounded-t-3xl p-6 pb-8" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-serif text-[18px] text-[#1B2A26]" style={{ fontFamily: "'Fraunces', serif" }}>Detail Transaksi</h3>
+          <button onClick={onClose} className="text-[#8B8579]"><X size={18} /></button>
+        </div>
+
+        <div className="text-center mb-6">
+          <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-medium mb-3 ${warnaBadge}`}>{t.kat}</span>
+          <div
+            className={`text-[28px] font-semibold ${positif ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            {rupiah(t.jumlah)}
+          </div>
+          <div className="text-[15px] text-[#1B2A26] font-medium mt-1">{t.nama}</div>
+        </div>
+
+        <div className="rounded-xl border border-[#E7E1D3] bg-white divide-y divide-[#F0EBDD] mb-6">
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-[12px] text-[#8B8579]">Tanggal</span>
+            <span className="text-[13px] text-[#1B2A26]">{t.tgl}</span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-[12px] text-[#8B8579]">Metode</span>
+            <span className="text-[13px] text-[#1B2A26]">{t.metode}</span>
+          </div>
+          {t.catatan && (
+            <div className="px-4 py-3">
+              <span className="text-[12px] text-[#8B8579] block mb-1">Catatan</span>
+              <span className="text-[13px] text-[#1B2A26]">{t.catatan}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={onEdit} className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl text-[14px] font-medium bg-[#1B2A26] text-white">
+            <Pencil size={14} /> Edit
+          </button>
+          <button onClick={onHapus} className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl text-[14px] font-medium border border-[#B5533C] text-[#B5533C]">
+            <Trash2 size={14} /> Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Transaksi({ transaksi, onDelete, onEdit }) {
   const [q, setQ] = useState("");
   const [kategoriTerpilih, setKategoriTerpilih] = useState([]);
@@ -539,6 +591,7 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
   const [sampaiKustom, setSampaiKustom] = useState(todayInput());
   const [editItem, setEditItem] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState(null);
 
   const TOTAL_SEMUA_KATEGORI = SUMBER_PEMASUKAN.length + KATEGORI_PENGELUARAN.length;
   const labelKategori =
@@ -655,10 +708,19 @@ function Transaksi({ transaksi, onDelete, onEdit }) {
               key={i}
               t={t}
               last={i === filtered.length - 1}
-              onInfo={() => { setEditItem(t); setFormOpen(true); }}
+              onInfo={() => setDetailItem(t)}
             />
           ))}
         </div>
+      )}
+
+      {detailItem && (
+        <DetailTransaksi
+          t={detailItem}
+          onClose={() => setDetailItem(null)}
+          onEdit={() => { setEditItem(detailItem); setDetailItem(null); setFormOpen(true); }}
+          onHapus={() => { onDelete(transaksi.indexOf(detailItem)); setDetailItem(null); }}
+        />
       )}
 
       {formOpen && (
@@ -2006,20 +2068,28 @@ function FormTambah({ initial, onClose, onSubmit, onDelete }) {
           </button>
         </div>
 
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => gantiTipe("keluar")}
-            className={`flex-1 py-2.5 rounded-xl text-[13px] font-medium ${tipe === "keluar" ? "bg-[#B5533C] text-white" : "bg-white border border-[#E7E1D3] text-[#8B8579]"}`}
-          >
-            Pengeluaran
-          </button>
-          <button
-            onClick={() => gantiTipe("masuk")}
-            className={`flex-1 py-2.5 rounded-xl text-[13px] font-medium ${tipe === "masuk" ? "bg-[#2F6F5E] text-white" : "bg-white border border-[#E7E1D3] text-[#8B8579]"}`}
-          >
-            Pemasukan
-          </button>
-        </div>
+        {initial ? (
+          <div className="mb-4">
+            <span className={`inline-block px-3 py-1.5 rounded-xl text-[13px] font-medium ${tipe === "keluar" ? "bg-[#F3E7E1] text-[#B5533C]" : "bg-[#EAF2EE] text-[#2F6F5E]"}`}>
+              {tipe === "keluar" ? "Pengeluaran" : "Pemasukan"}
+            </span>
+          </div>
+        ) : (
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => gantiTipe("keluar")}
+              className={`flex-1 py-2.5 rounded-xl text-[13px] font-medium ${tipe === "keluar" ? "bg-[#B5533C] text-white" : "bg-white border border-[#E7E1D3] text-[#8B8579]"}`}
+            >
+              Pengeluaran
+            </button>
+            <button
+              onClick={() => gantiTipe("masuk")}
+              className={`flex-1 py-2.5 rounded-xl text-[13px] font-medium ${tipe === "masuk" ? "bg-[#2F6F5E] text-white" : "bg-white border border-[#E7E1D3] text-[#8B8579]"}`}
+            >
+              Pemasukan
+            </button>
+          </div>
+        )}
 
         <label className="block text-[11px] uppercase tracking-wide text-[#8B8579] mb-1">Nama Transaksi</label>
         <input
