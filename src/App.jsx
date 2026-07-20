@@ -530,7 +530,6 @@ function PanelUrutan({ urutan, onUbah, onClose }) {
 
 function DetailTransaksi({ t, onClose, onEdit, onHapus }) {
   const positif = t.jumlah > 0;
-  const warnaBadge = positif ? "text-[#2F6F5E] bg-[#EAF2EE]" : "text-[#B5533C] bg-[#F3E7E1]";
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
       <div className="w-full max-w-sm bg-[#F6F3EC] rounded-t-3xl p-6 pb-8" onClick={(e) => e.stopPropagation()}>
@@ -539,18 +538,24 @@ function DetailTransaksi({ t, onClose, onEdit, onHapus }) {
           <button onClick={onClose} className="text-[#8B8579]"><X size={18} /></button>
         </div>
 
-        <div className="text-center mb-6">
-          <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-medium mb-3 ${warnaBadge}`}>{t.kat}</span>
-          <div
-            className={`text-[28px] font-semibold ${positif ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
-          >
-            {rupiah(t.jumlah)}
-          </div>
-          <div className="text-[15px] text-[#1B2A26] font-medium mt-1">{t.nama}</div>
-        </div>
-
         <div className="rounded-xl border border-[#E7E1D3] bg-white divide-y divide-[#F0EBDD] mb-6">
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-[12px] text-[#8B8579]">Nama</span>
+            <span className="text-[13px] text-[#1B2A26]">{t.nama}</span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-[12px] text-[#8B8579]">Kategori</span>
+            <span className="text-[13px] text-[#1B2A26]">{t.kat}</span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-[12px] text-[#8B8579]">Jumlah</span>
+            <span
+              className={`text-[13px] ${positif ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              {rupiah(t.jumlah)}
+            </span>
+          </div>
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-[12px] text-[#8B8579]">Tanggal</span>
             <span className="text-[13px] text-[#1B2A26]">{t.tgl}</span>
