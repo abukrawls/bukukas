@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
-import { Home, Receipt, PieChart as PieIcon, FileText, ArrowDownLeft, ArrowUpRight, Search, Download, ChevronRight, Plus, X, Trash2, HandCoins, Pencil, Wallet, Landmark, CreditCard, TrendingUp, Car, Building2, Gem, MoreHorizontal, UploadCloud, DownloadCloud, ArrowLeft, Users, Check, ChevronDown, ArrowUp, ArrowDown, Info } from "lucide-react";
+import { Home, Receipt, PieChart as PieIcon, FileText, ArrowDownLeft, ArrowUpRight, Search, Download, ChevronRight, Plus, X, Trash2, HandCoins, Pencil, Wallet, Landmark, CreditCard, TrendingUp, Car, Building2, Gem, MoreHorizontal, UploadCloud, DownloadCloud, ArrowLeft, Users, Check, ChevronDown, ArrowUp, ArrowDown, Info, Save } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, ResponsiveContainer } from "recharts";
 
 // ---------- DATA CONTOH ----------
@@ -2063,18 +2063,22 @@ function FormTambah({ initial, onClose, onSubmit, onDelete }) {
           <h3 className="font-serif text-[18px] text-[#1B2A26]" style={{ fontFamily: "'Fraunces', serif" }}>
             {initial ? "Edit Transaksi" : "Tambah Transaksi"}
           </h3>
-          <button onClick={onClose} className="text-[#8B8579]">
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            {onDelete && (
+              <button onClick={onDelete} className="text-[#B5533C] p-1.5" title="Hapus Transaksi">
+                <Trash2 size={18} />
+              </button>
+            )}
+            <button onClick={submit} className="text-[#1B2A26] p-1.5" title="Simpan Transaksi">
+              <Save size={18} />
+            </button>
+            <button onClick={onClose} className="text-[#8B8579] p-1.5" title="Tutup">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
-        {initial ? (
-          <div className="mb-4">
-            <span className={`inline-block px-3 py-1.5 rounded-xl text-[13px] font-medium ${tipe === "keluar" ? "bg-[#F3E7E1] text-[#B5533C]" : "bg-[#EAF2EE] text-[#2F6F5E]"}`}>
-              {tipe === "keluar" ? "Pengeluaran" : "Pemasukan"}
-            </span>
-          </div>
-        ) : (
+        {!initial && (
           <div className="flex gap-2 mb-4">
             <button
               onClick={() => gantiTipe("keluar")}
@@ -2110,7 +2114,7 @@ function FormTambah({ initial, onClose, onSubmit, onDelete }) {
         {errors.jumlah && <p className="text-[11px] text-[#B5533C] mb-2">{errors.jumlah}</p>}
 
         <label className="block text-[11px] uppercase tracking-wide text-[#8B8579] mb-1 mt-2">
-          {tipe === "keluar" ? "Kategori" : "Sumber Pemasukan"}
+          {tipe === "keluar" ? "Kategori Pengeluaran" : "Sumber Pemasukan"}
         </label>
         <select
           value={kat}
@@ -2146,17 +2150,8 @@ function FormTambah({ initial, onClose, onSubmit, onDelete }) {
           onChange={(e) => setCatatan(e.target.value)}
           placeholder="Tambahkan detail tambahan…"
           rows={2}
-          className="w-full bg-white border border-[#E7E1D3] rounded-xl px-3 py-2.5 text-[14px] mb-3 outline-none focus:border-[#2F6F5E] resize-none"
+          className="w-full bg-white border border-[#E7E1D3] rounded-xl px-3 py-2.5 text-[14px] mb-1 outline-none focus:border-[#2F6F5E] resize-none"
         />
-
-        <button onClick={submit} className="w-full bg-[#1B2A26] text-white py-3 rounded-xl text-[14px] font-medium mt-1">
-          Simpan Transaksi
-        </button>
-        {onDelete && (
-          <button onClick={onDelete} className="w-full text-[#B5533C] py-3 rounded-xl text-[14px] font-medium mt-1">
-            Hapus Transaksi
-          </button>
-        )}
       </div>
     </div>
   );
