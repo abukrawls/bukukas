@@ -387,28 +387,28 @@ function TxRow({ t, last, onInfo }) {
           {positif ? <ArrowDownLeft size={14} /> : <ArrowUpRight size={14} />}
         </div>
         <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[14px] text-[#1B2A26] font-medium truncate">{t.nama}</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${warnaBadge}`}>{t.kat}</span>
-          </div>
+          <div className="text-[14px] text-[#1B2A26] font-medium truncate">{t.nama}</div>
           <div className="text-[11px] text-[#8B8579] mt-1 leading-relaxed">
             <div>{t.tgl}</div>
             <div>{t.metode}</div>
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <div
-          className={`text-[16px] font-semibold whitespace-nowrap ${positif ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          {rupiah(t.jumlah)}
+      <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${warnaBadge}`}>{t.kat}</span>
+        <div className="flex items-center gap-2">
+          <div
+            className={`text-[16px] font-semibold whitespace-nowrap ${positif ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            {rupiah(t.jumlah)}
+          </div>
+          {onInfo && (
+            <button onClick={onInfo} className="text-[#8B8579] p-1">
+              <Info size={16} />
+            </button>
+          )}
         </div>
-        {onInfo && (
-          <button onClick={onInfo} className="text-[#8B8579] p-1">
-            <Info size={16} />
-          </button>
-        )}
       </div>
     </div>
   );
