@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
-import { Home, Receipt, PieChart as PieIcon, FileText, ArrowDownLeft, ArrowUpRight, Search, Download, ChevronRight, Plus, X, Trash2, HandCoins, Pencil, Wallet, Landmark, CreditCard, TrendingUp, Car, Building2, Gem, MoreHorizontal, UploadCloud, DownloadCloud, ArrowLeft, Users, Check, ChevronDown, ArrowUp, ArrowDown, Info, Save } from "lucide-react";
+import { Home, Receipt, PieChart as PieIcon, FileText, ArrowDownLeft, ArrowUpRight, Search, Download, ChevronRight, Plus, X, Trash2, HandCoins, Pencil, Wallet, Landmark, CreditCard, TrendingUp, Car, Building2, Gem, MoreHorizontal, UploadCloud, DownloadCloud, ArrowLeft, Users, Check, ChevronDown, ArrowUp, ArrowDown, Save } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, ResponsiveContainer } from "recharts";
 
 // ---------- DATA CONTOH ----------
@@ -114,6 +114,14 @@ const todayInput = () => {
 };
 
 const buatId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const salamWaktu = () => {
+  const jam = new Date().getHours();
+  if (jam >= 5 && jam < 11) return "Selamat Pagi";
+  if (jam >= 11 && jam < 15) return "Selamat Siang";
+  if (jam >= 15 && jam < 18) return "Selamat Sore";
+  return "Selamat Malam";
+};
 
 // Hitung rentang tanggal (timestamp) berdasarkan pilihan filter laporan
 function rentangTanggal(rentang, dariKustom, sampaiKustom) {
@@ -367,11 +375,6 @@ function Beranda({ goTo, transaksi, saldo, pemasukan, pengeluaran }) {
             Lihat semua <ChevronRight size={13} />
           </button>
         </div>
-        <div className="rounded-2xl border border-[#E7E1D3] overflow-hidden bg-white">
-          {transaksi.slice(0, 4).map((t, i) => (
-            <TxRow key={i} t={t} last={i === Math.min(3, transaksi.length - 1)} />
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -381,7 +384,10 @@ function TxRow({ t, last, onInfo }) {
   const positif = t.jumlah > 0;
   const warnaBadge = positif ? "text-[#2F6F5E] bg-[#EAF2EE]" : "text-[#B5533C] bg-[#F3E7E1]";
   return (
-    <div className={`flex items-center justify-between gap-3 px-4 py-3 ${!last ? "border-b border-[#F0EBDD]" : ""}`}>
+    <button
+      onClick={onInfo}
+      className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-left active:bg-[#FAF8F2] ${!last ? "border-b border-[#F0EBDD]" : ""}`}
+    >
       <div className="flex items-center gap-3 min-w-0">
         <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${positif ? "bg-[#EAF2EE] text-[#2F6F5E]" : "bg-[#F3E7E1] text-[#B5533C]"}`}>
           {positif ? <ArrowDownLeft size={14} /> : <ArrowUpRight size={14} />}
@@ -396,21 +402,14 @@ function TxRow({ t, last, onInfo }) {
       </div>
       <div className="flex flex-col items-end gap-1.5 shrink-0">
         <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${warnaBadge}`}>{t.kat}</span>
-        <div className="flex items-center gap-2">
-          <div
-            className={`text-[16px] font-semibold whitespace-nowrap ${positif ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
-          >
-            {rupiah(t.jumlah)}
-          </div>
-          {onInfo && (
-            <button onClick={onInfo} className="text-[#8B8579] p-1">
-              <Info size={16} />
-            </button>
-          )}
+        <div
+          className={`text-[16px] font-semibold whitespace-nowrap ${positif ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}
+          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+        >
+          {rupiah(t.jumlah)}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -2286,7 +2285,7 @@ export default function BukuKasApp() {
               Buku Kas
             </span>
           </div>
-          <span className="text-[11px] text-[#8B8579] border border-[#E7E1D3] rounded-full px-2.5 py-1">Semua Waktu</span>
+          <span className="text-[12px] italic text-[#8B8579]" style={{ fontFamily: "'Fraunces', serif" }}>{salamWaktu()}</span>
         </header>
 
         <main className="pb-24">
@@ -2321,7 +2320,7 @@ export default function BukuKasApp() {
           )}
         </main>
 
-        {(tab === "beranda" || tab === "transaksi") && (
+        {tab === "transaksi" && (
           <button
             onClick={() => setFormOpen(true)}
             className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-[#1B2A26] text-white flex items-center justify-center shadow-lg z-20"
