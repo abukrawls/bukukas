@@ -1313,8 +1313,7 @@ function Laporan({ transaksi, aset, hutang }) {
 // ---------- LAYAR: LAINNYA ----------
 const MENU_LAINNYA = [
   { id: "laporan", label: "Laporan", deskripsi: "Ekspor data ke PDF atau PNG", icon: FileText },
-  { id: "backup", label: "Backup Data", deskripsi: "Simpan cadangan seluruh data aplikasi", icon: UploadCloud },
-  { id: "restore", label: "Restore Data", deskripsi: "Pulihkan data dari cadangan", icon: DownloadCloud },
+  { id: "backup-restore", label: "Backup & Restore", deskripsi: "Cadangkan atau pulihkan data aplikasi", icon: UploadCloud },
 ];
 
 function HeaderSubHalaman({ judul, onBack }) {
@@ -1328,18 +1327,123 @@ function HeaderSubHalaman({ judul, onBack }) {
   );
 }
 
-function HalamanSegeraHadir({ judul, pesan, onBack }) {
+async function buatBackupZip({ transaksi, hutang, aset }) {
+  const JSZip = (await import("jszip")).default;
+  const zip = new JSZip();
+  const data = {
+    versi: 1,
+    dibuatPada: new Date().toISOString(),
+    transaksi,
+    hutang,
+    aset,
+  };
+  zip.file("data.json", JSON.stringify(data, null, 2));
+  const blob = await zip.generateAsync({ type: "blob" });
+
+  const d = new Date();
+  const tgl = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const jam = `${String(d.getHours()).padStart(2, "0")}-${String(d.getMinutes()).padStart(2, "0")}`;
+  const namaFile = `Backup_BukuKas_${tgl}_${jam}.zip`;
+
+  await simpanBlob(blob, namaFile, "application/zip");
+}
+
+async function bacaBackupZip(file) {
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(file);
+  const entry = zip.file("data.json");
+  if (!entry) throw new Error("File backup tidak valid (data.json tidak ditemukan di dalam ZIP).");
+  const teks = await entry.async("string");
+  const data = JSON.parse(teks);
+  if (!data || typeof data !== "object") throw new Error("Format data backup tidak valid.");
+  return data;
+}
+
+function BackupRestore({ transaksi, hutang, aset, onRestore, onBack }) {
+  const [memproses, setMemproses] = useState("");
+  const [pesan, setPesan] = useState({ tipe: "", teks: "" });
+  const fileRef = useRef(null);
+
+  const jalankanBackup = async () => {
+    if (memproses) return;
+    setMemproses("backup");
+    setPesan({ tipe: "", teks: "" });
+    try {
+      await buatBackupZip({ transaksi, hutang, aset });
+      setPesan({ tipe: "sukses", teks: "Backup berhasil dibuat dan diunduh." });
+    } catch (e) {
+      console.error("Gagal membuat backup:", e);
+      setPesan({ tipe: "gagal", teks: "Gagal membuat backup. Coba lagi." });
+    } finally {
+      setMemproses("");
+    }
+  };
+
+  const prosesRestore = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setMemproses("restore");
+    setPesan({ tipe: "", teks: "" });
+    try {
+      const data = await bacaBackupZip(file);
+      onRestore(data);
+      setPesan({ tipe: "sukses", teks: "Data berhasil dipulihkan dari cadangan." });
+    } catch (err) {
+      console.error("Gagal memulihkan data:", err);
+      setPesan({ tipe: "gagal", teks: err.message || "Gagal memulihkan data. Pastikan file backup valid." });
+    } finally {
+      setMemproses("");
+    }
+  };
+
   return (
     <div className="px-6 pt-6 pb-4">
-      <HeaderSubHalaman judul={judul} onBack={onBack} />
-      <div className="rounded-2xl border border-[#E7E1D3] bg-white p-8 flex flex-col items-center text-center">
-        <p className="text-[13px] text-[#8B8579]">{pesan}</p>
+      <HeaderSubHalaman judul="Backup & Restore" onBack={onBack} />
+
+      <div className="rounded-2xl border border-[#E7E1D3] bg-white p-5 mb-4">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center bg-[#EAF2EE] text-[#2F6F5E] shrink-0">
+            <UploadCloud size={16} />
+          </div>
+          <div className="text-[14px] text-[#1B2A26] font-medium">Backup Data</div>
+        </div>
+        <p className="text-[12px] text-[#8B8579] mb-4">Simpan seluruh data transaksi, hutang & piutang, serta aset ke dalam satu file ZIP.</p>
+        <button
+          onClick={jalankanBackup}
+          disabled={!!memproses}
+          className="w-full bg-[#1B2A26] text-white py-3 rounded-xl text-[14px] font-medium disabled:opacity-60"
+        >
+          {memproses === "backup" ? "Memproses…" : "Backup Sekarang"}
+        </button>
       </div>
+
+      <div className="rounded-2xl border border-[#E7E1D3] bg-white p-5">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center bg-[#EAF2EE] text-[#2F6F5E] shrink-0">
+            <DownloadCloud size={16} />
+          </div>
+          <div className="text-[14px] text-[#1B2A26] font-medium">Restore Data</div>
+        </div>
+        <p className="text-[12px] text-[#8B8579] mb-4">Pulihkan data dari file cadangan ZIP. Data yang tersimpan saat ini akan digantikan isi file backup.</p>
+        <input ref={fileRef} type="file" accept=".zip" onChange={prosesRestore} className="hidden" />
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={!!memproses}
+          className="w-full bg-white border border-[#E7E1D3] text-[#1B2A26] py-3 rounded-xl text-[14px] font-medium disabled:opacity-60"
+        >
+          {memproses === "restore" ? "Memproses…" : "Pilih File Backup (.zip)"}
+        </button>
+      </div>
+
+      {pesan.teks && (
+        <p className={`text-[12px] mt-4 ${pesan.tipe === "sukses" ? "text-[#2F6F5E]" : "text-[#B5533C]"}`}>{pesan.teks}</p>
+      )}
     </div>
   );
 }
 
-function Lainnya({ transaksi, aset, hutang }) {
+function Lainnya({ transaksi, aset, hutang, onRestore }) {
   const [layar, setLayar] = useState("menu");
 
   if (layar === "laporan") {
@@ -1354,11 +1458,16 @@ function Lainnya({ transaksi, aset, hutang }) {
       </div>
     );
   }
-  if (layar === "backup") {
-    return <HalamanSegeraHadir judul="Backup Data" pesan="Fitur backup data akan segera hadir." onBack={() => setLayar("menu")} />;
-  }
-  if (layar === "restore") {
-    return <HalamanSegeraHadir judul="Restore Data" pesan="Fitur restore data akan segera hadir." onBack={() => setLayar("menu")} />;
+  if (layar === "backup-restore") {
+    return (
+      <BackupRestore
+        transaksi={transaksi}
+        hutang={hutang}
+        aset={aset}
+        onRestore={onRestore}
+        onBack={() => setLayar("menu")}
+      />
+    );
   }
 
   return (
@@ -2252,6 +2361,12 @@ export default function BukuKasApp() {
   const editAset = (data) => setAset((prev) => prev.map((a) => (a.id === data.id ? data : a)));
   const hapusAset = (id) => setAset((prev) => prev.filter((a) => a.id !== id));
 
+  const restoreSemuaData = (data) => {
+    if (Array.isArray(data.transaksi)) setTransaksi(data.transaksi);
+    if (Array.isArray(data.hutang)) setHutang(data.hutang);
+    if (Array.isArray(data.aset)) setAset(data.aset);
+  };
+
   const NAV = [
     { id: "beranda", label: "Beranda", icon: Home },
     { id: "transaksi", label: "Transaksi", icon: Receipt },
@@ -2315,7 +2430,7 @@ export default function BukuKasApp() {
                 <HutangPiutang daftar={hutang} onTambah={tambahHutang} onEdit={editHutang} onHapus={hapusHutang} onBayar={bayarHutang} />
               )}
               {tab === "statistik" && <Statistik kategori={kategoriData} tren={trenData} totalPengeluaran={pengeluaran} />}
-              {tab === "lainnya" && <Lainnya transaksi={transaksi} aset={aset} hutang={hutang} />}
+              {tab === "lainnya" && <Lainnya transaksi={transaksi} aset={aset} hutang={hutang} onRestore={restoreSemuaData} />}
             </>
           )}
         </main>
