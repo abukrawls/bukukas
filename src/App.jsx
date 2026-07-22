@@ -30,6 +30,26 @@ const angkaSaja = (n) => {
   return (n < 0 ? "-" : "") + abs.toLocaleString("id-ID");
 };
 
+// Angka ringkas berskala otomatis (jt/M/T) — dipakai di kartu ringkasan agar tidak pernah merusak tata letak
+const angkaRingkas = (n) => {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000_000_000) return `${(abs / 1_000_000_000_000).toFixed(1)}T`;
+  if (abs >= 1_000_000_000) return `${(abs / 1_000_000_000).toFixed(1)}M`;
+  return `${(abs / 1_000_000).toFixed(1)}jt`;
+};
+
+// Untuk angka besar (mis. Saldo Total) — tetap angka penuh selama masih wajar, otomatis ringkas kalau sudah sangat besar,
+// dan dibatasi + "+" untuk kasus ekstrem agar tampilan tidak pernah pecah
+const BATAS_TAMPIL_PENUH = 999_999_999_999; // di bawah ini tampil angka penuh (masih muat)
+const BATAS_MAKSIMAL = 999_000_000_000_000; // di atas ini dibulatkan + tanda "+"
+const rupiahAdaptif = (n) => {
+  const neg = n < 0;
+  const abs = Math.abs(n);
+  if (abs > BATAS_MAKSIMAL) return (neg ? "-" : "") + "Rp 999T+";
+  if (abs > BATAS_TAMPIL_PENUH) return (neg ? "-" : "") + `Rp ${angkaRingkas(abs)}`;
+  return rupiah(n);
+};
+
 // Helper format angka Indonesia (pemisah ribuan ".") — dipakai ulang oleh semua input nominal
 const angkaMurni = (str) => (str || "").replace(/[^0-9]/g, "").replace(/^0+(?=\d)/, "");
 const formatRibuan = (digitStr) => (digitStr ? digitStr.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "");
@@ -315,7 +335,7 @@ function Beranda({ goTo, transaksi, saldo, pemasukan, pengeluaran }) {
           className="font-serif text-[40px] leading-none mb-1"
           style={{ fontFamily: "'Fraunces', serif", color: saldo < 0 ? "#B5533C" : "#1B2A26" }}
         >
-          {rupiah(saldo)}
+          {rupiahAdaptif(saldo)}
         </div>
         <p className="text-[13px] text-[#8B8579] mb-5">
           {saldo < 0 ? "Pengeluaran melebihi pemasukan tercatat" : "Seluruh transaksi tercatat rapi"}
@@ -328,7 +348,7 @@ function Beranda({ goTo, transaksi, saldo, pemasukan, pengeluaran }) {
               <span className="text-[11px] uppercase tracking-wide font-medium">Pemasukan</span>
             </div>
             <div className="text-[20px] font-semibold text-[#1B2A26]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              Rp {(pemasukan / 1000000).toFixed(1)}jt
+              Rp {angkaRingkas(pemasukan)}
             </div>
           </div>
           <div className="rounded-2xl bg-[#F3E7E1] p-4">
@@ -337,7 +357,7 @@ function Beranda({ goTo, transaksi, saldo, pemasukan, pengeluaran }) {
               <span className="text-[11px] uppercase tracking-wide font-medium">Pengeluaran</span>
             </div>
             <div className="text-[20px] font-semibold text-[#1B2A26]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              Rp {(pengeluaran / 1000000).toFixed(1)}jt
+              Rp {angkaRingkas(pengeluaran)}
             </div>
           </div>
         </div>
@@ -350,7 +370,7 @@ function Beranda({ goTo, transaksi, saldo, pemasukan, pengeluaran }) {
           Pola 7 Hari Terakhir
         </h3>
         <p className="text-[12px] text-[#8B8579] mb-3">
-          {totalPolaMingguan > 0 ? `Total ${rupiah(totalPolaMingguan)}` : "Belum ada pengeluaran"}
+          {totalPolaMingguan > 0 ? `Total ${rupiahAdaptif(totalPolaMingguan)}` : "Belum ada pengeluaran"}
         </p>
         <div className="h-32 -ml-2">
           <ResponsiveContainer width="100%" height="100%">
@@ -765,7 +785,7 @@ function Statistik({ kategori, tren, totalPengeluaran }) {
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-[9px] text-[#8B8579] uppercase">Total</span>
-                <span className="text-[13px] font-semibold text-[#1B2A26]">Rp{(totalPengeluaran / 1000000).toFixed(1)}jt</span>
+                <span className="text-[13px] font-semibold text-[#1B2A26]">Rp{angkaRingkas(totalPengeluaran)}</span>
               </div>
             </div>
             <div className="flex-1 space-y-2">
