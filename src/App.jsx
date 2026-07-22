@@ -37,34 +37,44 @@ const SATUAN_RINGKAS = [
   { bagi: 1_000_000, label: "jt" },
 ];
 
-// Angka ringkas dengan batas maksimal digit (biar tidak pernah kepanjangan/pecah tata letak)
-const angkaRingkas = (n, maksDigit = 3) => {
+// Format ringkas: potong (truncate) nilai, jangan pernah membulatkan ke atas.
+// Desimal cuma tampil kalau tidak nol; tanda "+" cuma muncul kalau memang ada digit yang disembunyikan.
+const angkaRingkas = (n, maksDigitDepan = 3) => {
   const abs = Math.abs(n);
   let idx = SATUAN_RINGKAS.findIndex((s) => abs >= s.bagi);
   if (idx === -1) idx = SATUAN_RINGKAS.length - 1; // fallback: angka kecil tetap tampil dalam "jt"
   let { bagi, label } = SATUAN_RINGKAS[idx];
-  let nilai = abs / bagi;
-  // Cegah pembulatan "naik kelas" satuan (mis. 999,96jt jangan sampai jadi "1000,0jt")
-  if (nilai >= 1000 && idx > 0) {
+
+  // potong ke 1 desimal (truncate, bukan round)
+  let terpotong = Math.floor((abs / bagi) * 10) / 10;
+  // cegah "naik kelas" satuan akibat pemotongan (mis. hasil 1000,0 harusnya sudah masuk satuan di atasnya)
+  if (terpotong >= 1000 && idx > 0) {
     idx -= 1;
     ({ bagi, label } = SATUAN_RINGKAS[idx]);
-    nilai = abs / bagi;
+    terpotong = Math.floor((abs / bagi) * 10) / 10;
   }
-  const digitDepan = Math.floor(nilai).toString().length;
-  if (digitDepan > maksDigit) {
-    return `${Math.floor(nilai)}+${label}`;
+
+  const bagianBulat = Math.floor(terpotong);
+  const bagianDesimal = Math.round((terpotong - bagianBulat) * 10);
+  const adaDisembunyikan = abs / bagi > terpotong + 1e-9;
+
+  // batas digit depan koma — kalau tetap kepanjangan (kasus ekstrem), potong paksa
+  if (bagianBulat.toString().length > maksDigitDepan) {
+    return `${bagianBulat.toString().slice(0, maksDigitDepan)}+ ${label}`;
   }
-  return `${nilai.toFixed(1).replace(".", ",")}${label}`;
+
+  const teksAngka = bagianDesimal === 0 ? `${bagianBulat}` : `${bagianBulat},${bagianDesimal}`;
+  return `${teksAngka} ${label}${adaDisembunyikan ? "+" : ""}`;
 };
 
-// Untuk angka besar (mis. Saldo Total) — tetap angka penuh selama masih wajar, otomatis ringkas kalau sudah sangat besar,
+// Untuk angka besar (mis. Saldo Total) — tetap angka penuh selama masih wajar, otomatis ringkas kalau sudah besar,
 // dan dibatasi + "+" untuk kasus ekstrem agar tampilan tidak pernah pecah
-const BATAS_TAMPIL_PENUH = 999_999_999_999; // di bawah ini tampil angka penuh (masih muat)
+const BATAS_TAMPIL_PENUH = 999_999_999; // di bawah ini (< Rp1 Miliar) tampil angka penuh, masih wajar & muat
 const BATAS_MAKSIMAL = 999_000_000_000_000; // di atas ini dibulatkan + tanda "+"
 const rupiahAdaptif = (n) => {
   const neg = n < 0;
   const abs = Math.abs(n);
-  if (abs > BATAS_MAKSIMAL) return (neg ? "-" : "") + "Rp 999T+";
+  if (abs > BATAS_MAKSIMAL) return (neg ? "-" : "") + "Rp 999+ T";
   if (abs > BATAS_TAMPIL_PENUH) return (neg ? "-" : "") + `Rp ${angkaRingkas(abs)}`;
   return rupiah(n);
 };
@@ -416,8 +426,8 @@ function Beranda({ goTo, transaksi, saldo, pemasukan, pengeluaran }) {
             Lihat semua <ChevronRight size={13} />
           </button>
         </div>
-        <p className="text-[12px] text-[#8B8579] text-center">
-          ({new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })})
+        <p className="text-[12px] italic text-[#8B8579] text-center leading-relaxed mt-1.5 line-clamp-2">
+          Bukan seberapa banyak uang yang Anda miliki, tetapi seberapa baik setiap rupiah dikelola.
         </p>
       </div>
     </div>
@@ -809,7 +819,7 @@ function Statistik({ kategori, tren, totalPengeluaran }) {
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-[9px] text-[#8B8579] uppercase">Total</span>
-                <span className="text-[13px] font-semibold text-[#1B2A26]">Rp{angkaRingkas(totalPengeluaran)}</span>
+                <span className="text-[13px] font-semibold text-[#1B2A26]">Rp {angkaRingkas(totalPengeluaran)}</span>
               </div>
             </div>
             <div className="flex-1 space-y-2">
