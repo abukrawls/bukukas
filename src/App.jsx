@@ -31,11 +31,30 @@ const angkaSaja = (n) => {
 };
 
 // Angka ringkas berskala otomatis (jt/M/T) — dipakai di kartu ringkasan agar tidak pernah merusak tata letak
-const angkaRingkas = (n) => {
+const SATUAN_RINGKAS = [
+  { bagi: 1_000_000_000_000, label: "T" },
+  { bagi: 1_000_000_000, label: "M" },
+  { bagi: 1_000_000, label: "jt" },
+];
+
+// Angka ringkas dengan batas maksimal digit (biar tidak pernah kepanjangan/pecah tata letak)
+const angkaRingkas = (n, maksDigit = 3) => {
   const abs = Math.abs(n);
-  if (abs >= 1_000_000_000_000) return `${(abs / 1_000_000_000_000).toFixed(1)}T`;
-  if (abs >= 1_000_000_000) return `${(abs / 1_000_000_000).toFixed(1)}M`;
-  return `${(abs / 1_000_000).toFixed(1)}jt`;
+  let idx = SATUAN_RINGKAS.findIndex((s) => abs >= s.bagi);
+  if (idx === -1) idx = SATUAN_RINGKAS.length - 1; // fallback: angka kecil tetap tampil dalam "jt"
+  let { bagi, label } = SATUAN_RINGKAS[idx];
+  let nilai = abs / bagi;
+  // Cegah pembulatan "naik kelas" satuan (mis. 999,96jt jangan sampai jadi "1000,0jt")
+  if (nilai >= 1000 && idx > 0) {
+    idx -= 1;
+    ({ bagi, label } = SATUAN_RINGKAS[idx]);
+    nilai = abs / bagi;
+  }
+  const digitDepan = Math.floor(nilai).toString().length;
+  if (digitDepan > maksDigit) {
+    return `${Math.floor(nilai)}+${label}`;
+  }
+  return `${nilai.toFixed(1).replace(".", ",")}${label}`;
 };
 
 // Untuk angka besar (mis. Saldo Total) — tetap angka penuh selama masih wajar, otomatis ringkas kalau sudah sangat besar,
@@ -135,12 +154,14 @@ const todayInput = () => {
 
 const buatId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+const NAMA_PENGGUNA = "Tania";
+
 const salamWaktu = () => {
   const jam = new Date().getHours();
-  if (jam >= 5 && jam < 11) return "Selamat Pagi";
-  if (jam >= 11 && jam < 15) return "Selamat Siang";
-  if (jam >= 15 && jam < 18) return "Selamat Sore";
-  return "Selamat Malam";
+  if (jam >= 5 && jam < 11) return `Selamat Pagi, ${NAMA_PENGGUNA}`;
+  if (jam >= 11 && jam < 15) return `Selamat Siang, ${NAMA_PENGGUNA}`;
+  if (jam >= 15 && jam < 18) return `Selamat Sore, ${NAMA_PENGGUNA}`;
+  return `Selamat Malam, ${NAMA_PENGGUNA}`;
 };
 
 // Hitung rentang tanggal (timestamp) berdasarkan pilihan filter laporan
@@ -395,6 +416,9 @@ function Beranda({ goTo, transaksi, saldo, pemasukan, pengeluaran }) {
             Lihat semua <ChevronRight size={13} />
           </button>
         </div>
+        <p className="text-[12px] text-[#8B8579] text-center">
+          ({new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })})
+        </p>
       </div>
     </div>
   );
