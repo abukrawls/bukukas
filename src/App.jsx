@@ -37,46 +37,44 @@ const SATUAN_RINGKAS = [
   { bagi: 1_000_000, label: "jt" },
 ];
 
-// Format ringkas: potong (truncate) nilai, jangan pernah membulatkan ke atas.
-// Desimal cuma tampil kalau tidak nol; tanda "+" cuma muncul kalau memang ada digit yang disembunyikan.
-const angkaRingkas = (n, maksDigitDepan = 3) => {
-  const abs = Math.abs(n);
-  let idx = SATUAN_RINGKAS.findIndex((s) => abs >= s.bagi);
-  if (idx === -1) idx = SATUAN_RINGKAS.length - 1; // fallback: angka kecil tetap tampil dalam "jt"
-  let { bagi, label } = SATUAN_RINGKAS[idx];
+const cariSatuan = (abs) => {
+  const idx = SATUAN_RINGKAS.findIndex((s) => abs >= s.bagi);
+  return SATUAN_RINGKAS[idx === -1 ? SATUAN_RINGKAS.length - 1 : idx];
+};
 
-  // potong ke 1 desimal (truncate, bukan round)
-  let terpotong = Math.floor((abs / bagi) * 10) / 10;
-  // cegah "naik kelas" satuan akibat pemotongan (mis. hasil 1000,0 harusnya sudah masuk satuan di atasnya)
-  if (terpotong >= 1000 && idx > 0) {
-    idx -= 1;
-    ({ bagi, label } = SATUAN_RINGKAS[idx]);
-    terpotong = Math.floor((abs / bagi) * 10) / 10;
-  }
-
+// Potong ke 1 desimal (truncate, BUKAN bulatkan) untuk satuan jt/M/T.
+// Desimal cuma tampil kalau tidak nol; "+" cuma muncul kalau memang ada digit yang disembunyikan.
+const formatSatuanBesar = (abs, bagi, label) => {
+  const terpotong = Math.floor((abs / bagi) * 10) / 10;
   const bagianBulat = Math.floor(terpotong);
   const bagianDesimal = Math.round((terpotong - bagianBulat) * 10);
   const adaDisembunyikan = abs / bagi > terpotong + 1e-9;
-
-  // batas digit depan koma — kalau tetap kepanjangan (kasus ekstrem), potong paksa
-  if (bagianBulat.toString().length > maksDigitDepan) {
-    return `${bagianBulat.toString().slice(0, maksDigitDepan)}+ ${label}`;
-  }
-
   const teksAngka = bagianDesimal === 0 ? `${bagianBulat}` : `${bagianBulat},${bagianDesimal}`;
   return `${teksAngka} ${label}${adaDisembunyikan ? "+" : ""}`;
 };
 
-// Untuk angka besar (mis. Saldo Total) — tetap angka penuh selama masih wajar, otomatis ringkas kalau sudah besar,
-// dan dibatasi + "+" untuk kasus ekstrem agar tampilan tidak pernah pecah
-const BATAS_TAMPIL_PENUH = 999_999_999; // di bawah ini (< Rp1 Miliar) tampil angka penuh, masih wajar & muat
-const BATAS_MAKSIMAL = 999_000_000_000_000; // di atas ini dibulatkan + tanda "+"
+// Format ringkas untuk kartu (Pemasukan/Pengeluaran, dsb):
+// < Rp10rb tampil penuh, Rp10rb–999rb pakai "rb" (bulat, tanpa desimal), ≥Rp1jt pakai jt/M/T (1 desimal)
+const angkaRingkas = (n) => {
+  const neg = n < 0;
+  const abs = Math.abs(n);
+  if (abs < 10_000) return (neg ? "-" : "") + abs.toLocaleString("id-ID");
+  if (abs < 1_000_000) {
+    const bulat = Math.floor(abs / 1000);
+    const adaDisembunyikan = abs % 1000 !== 0;
+    return (neg ? "-" : "") + `${bulat} rb${adaDisembunyikan ? "+" : ""}`;
+  }
+  const { bagi, label } = cariSatuan(abs);
+  return (neg ? "-" : "") + formatSatuanBesar(abs, bagi, label);
+};
+
+// Format untuk Saldo Total: tampil penuh sampai < Rp10jt (±7 digit), di atasnya pakai jt/M/T (tanpa tahap "rb")
 const rupiahAdaptif = (n) => {
   const neg = n < 0;
   const abs = Math.abs(n);
-  if (abs > BATAS_MAKSIMAL) return (neg ? "-" : "") + "Rp 999+ T";
-  if (abs > BATAS_TAMPIL_PENUH) return (neg ? "-" : "") + `Rp ${angkaRingkas(abs)}`;
-  return rupiah(n);
+  if (abs < 10_000_000) return rupiah(n);
+  const { bagi, label } = cariSatuan(abs);
+  return (neg ? "-" : "") + `Rp ${formatSatuanBesar(abs, bagi, label)}`;
 };
 
 // Helper format angka Indonesia (pemisah ribuan ".") — dipakai ulang oleh semua input nominal
@@ -401,7 +399,7 @@ function Beranda({ goTo, transaksi, saldo, pemasukan, pengeluaran }) {
           Pola 7 Hari Terakhir
         </h3>
         <p className="text-[12px] text-[#8B8579] mb-3">
-          {totalPolaMingguan > 0 ? `Total ${rupiahAdaptif(totalPolaMingguan)}` : "Belum ada pengeluaran"}
+          {totalPolaMingguan > 0 ? `Total Rp ${angkaRingkas(totalPolaMingguan)}` : "Belum ada pengeluaran"}
         </p>
         <div className="h-32 -ml-2">
           <ResponsiveContainer width="100%" height="100%">
