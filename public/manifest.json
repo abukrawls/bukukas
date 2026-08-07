@@ -1,0 +1,20 @@
+{
+  "name": "Buku Kas",
+  "short_name": "Buku Kas",
+  "description": "Aplikasi keuangan pribadi untuk transaksi, aset, anggaran, target menabung, cicilan, serta hutang dan piutang.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#245F50",
+  "background_color": "#EEF3F0",
+  "lang": "id",
+  "dir": "ltr",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
